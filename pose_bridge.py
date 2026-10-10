@@ -884,6 +884,52 @@ class GaoshangMHRToOpenPose:
                     p["world_pos"] = [round(float(p["cam_t"][0]) * lam, 3), 0.0, round(float(z_ref), 3)]
         except Exception as error6:
             print("GaoshangMHRToOpenPose same-plane normalization failed:", error6)
+        # 体型与性别估计（同平面规尺下的骨架度量，缩水不影响比值）：肩宽/髋宽比是
+        # 经典性别二态特征（男~1.4 女~1.15-1.25）；相对身高/躯干宽给编辑器 morph 滑杆。
+        # 被遮挡者绝对尺寸不可信（历史实测缩水），高度/体重取组默认，性别比值保留。
+        try:
+            def _v(p, i):
+                w = p.get("pose_world3d") or []
+                return np.array([w[i * 3], w[i * 3 + 1], w[i * 3 + 2]], dtype=np.float32) if len(w) >= 54 else None
+            def _h3d(p):
+                w = p.get("pose_world3d") or []
+                if len(w) < 54: return None
+                ys = [w[i * 3 + 1] for i in range(14)]
+                return max(ys) - min(ys)
+            def _torso(p):
+                rs, ls, rh, lh = _v(p, 2), _v(p, 5), _v(p, 8), _v(p, 11)
+                if any(x is None for x in (rs, ls, rh, lh)): return None
+                return (float(np.linalg.norm(rs - ls)) + float(np.linalg.norm(rh - lh))) / 2
+            heights = [h for h in (_h3d(p) for p in people) if h and h > 0.2]
+            torsos = [t for t in (_torso(p) for p in people) if t and t > 0.05]
+            h_med = sorted(heights)[len(heights) // 2] if heights else None
+            t_med = sorted(torsos)[len(torsos) // 2] if torsos else None
+            for p in people:
+                rs, ls, rh, lh = _v(p, 2), _v(p, 5), _v(p, 8), _v(p, 11)
+                body = {}
+                if all(x is not None for x in (rs, ls, rh, lh)):
+                    sh = float(np.linalg.norm(rs - ls)); hp = float(np.linalg.norm(rh - lh))
+                    if hp > 0.02:
+                        # 骨架肩髋比对性别无判别力：已知两男标定 1.96-2.30，
+                        # 覆盖全部观测范围（重建噪声支配）。性别默认中性，
+                        # 比值仅存诊断；可靠性别待 VLM 通道（见档案）。
+                        body["gender"] = 0.5
+                        body["shoulder_hip"] = round(sh / hp, 2)
+                h = _h3d(p); t = _torso(p)
+                if h_med and h and h > 0.2 and p.get("fully_visible") is not False:
+                    body["height"] = round(0.5 + min(0.25, max(-0.25, (h / h_med - 1) / 0.30 * 0.25)), 2)
+                else:
+                    body["height"] = 0.5
+                if t_med and t and h and h > 0.2 and p.get("fully_visible") is not False:
+                    rel = (t / h) / (t_med / h_med)
+                    body["weight"] = round(0.5 + min(0.22, max(-0.18, (rel - 1) / 0.12 * 0.2)), 2)
+                else:
+                    body["weight"] = 0.5
+                body["muscle"] = round(min(0.85, max(0.15, 0.25 + 0.45 * ((body.get("gender", 0.5) - 0.15) / 0.7) + 0.15 * ((body["weight"] - 0.5) * 4))), 2)
+                if body:
+                    p["body"] = body
+        except Exception as error8:
+            print("GaoshangMHRToOpenPose body estimation failed:", error8)
         import time as _time
         payload = {"people": people, "canvas_width": width, "canvas_height": height,
                    "version": int(_time.time())}

@@ -433,6 +433,7 @@ async function importMultiPersonJSON(data) {
                 heightPx: Math.max(1, feetY - joints.head[1]),
                 camT, w3, origin,
                 worldPos: Array.isArray(entry0.world_pos) && entry0.world_pos.length === 3 ? entry0.world_pos : null,
+                body: entry0.body && typeof entry0.body === 'object' ? entry0.body : null,
                 // 可见度三态：true=全身可见（重建可信）/false=被遮挡（大小采用组内可见者基准）/null=无数据
                 fullyVisible: entry0.fully_visible === true ? true : (entry0.fully_visible === false ? false : null),
                 sam3d: entry0.sam3d && typeof entry0.sam3d === 'object' ? entry0.sam3d : null,
@@ -448,6 +449,15 @@ async function importMultiPersonJSON(data) {
         while (people.length < built.length) addPerson();
         for (let index = 0; index < built.length; index++) {
             selectPerson(index);
+            if (built[index].body) {
+                // 体型/性别自动套用（检测链估计）：改 doc.mesh 后重建人偶再摆姿势
+                const bm = built[index].body;
+                const mesh = { ...doc.mesh };
+                for (const k of ['gender', 'height', 'weight', 'muscle'])
+                    if (Number.isFinite(Number(bm[k]))) mesh[k] = Number(bm[k]);
+                doc.mesh = mesh;
+                loadModel(savedPose());
+            }
             doc.openpose = { key: 'json:' + (index + 1), name: 'JSON ' + (index + 1) + ' 号', points: built[index].joints, flips: {} };
             let applied = false;
             if (built[index].sam3d) {
@@ -1016,6 +1026,9 @@ function refreshControls() {
     $('#tz').value = doc.transform.z; setOutput('tz', doc.transform.z.toFixed(1));
     const turn = Math.round(viewer.modelRotation?.y || 0);
     $('#turn').value = turn; setOutput('turn', `${turn}°`);
+    const rot3 = viewer.modelRotation || { x: 0, y: 0, z: 0 };
+    $('#pitch').value = Math.round(rot3.x); setOutput('pitch', `${Math.round(rot3.x)}°`);
+    $('#roll').value = Math.round(rot3.z); setOutput('roll', `${Math.round(rot3.z)}°`);
     $('#output-width').value = doc.width;
     $('#output-height').value = doc.height;
     $('#preview-size').textContent = `${doc.width}×${doc.height}`;
@@ -1024,7 +1037,7 @@ function refreshControls() {
         button.classList.toggle('active', Math.abs(doc.width / doc.height - a / b) < 0.02);
     }
     // 全组滑杆的增量基准（refreshControls 每次刷新后重记）
-    for (const id of ['zoom', 'tx', 'ty', 'tz', 'turn']) sliderPrev[id] = Number($(`#${id}`).value);
+    for (const id of ['zoom', 'tx', 'ty', 'tz', 'turn', 'pitch', 'roll']) sliderPrev[id] = Number($(`#${id}`).value);
     for (const [key] of BODY_SLIDERS) {
         const input = $(`#body-${key}`);
         if (input) { input.value = doc.mesh[key]; setOutput(`body-${key}`, key === 'age' ? String(doc.mesh[key]) : Number(doc.mesh[key]).toFixed(2)); }
@@ -1069,22 +1082,31 @@ for (const [id, key] of [['zoom', 'zoom'], ['tx', 'x'], ['ty', 'y'], ['tz', 'z']
         refreshControls(); schedulePreview();
     });
 }
-const turnTo = value => { viewer.setModelRotation(0, value, 0); refreshControls(); schedulePreview(); };
-bindSlider($('#turn'), value => {
-    if (groupMode()) {
-        const prev = sliderPrev.turn ?? value;
-        sliderPrev.turn = value;
-        const delta = value - prev;
-        eachPerson(() => {
-            const rotation = viewer.modelRotation;
-            const yaw = ((rotation.y + delta + 180) % 360 + 360) % 360 - 180;
-            viewer.setModelRotation(rotation.x, yaw, rotation.z);
-        });
-        return;
-    }
-    turnTo(value);
-});
-for (const button of document.querySelectorAll('[data-turn]')) button.onclick = () => { viewer.recordState(); turnTo(Number(button.dataset.turn)); };
+// 三自由度旋转：轴（yaw）、俯仰（pitch=x）、侧倾（roll=z）。旋转中心=人偶自身脚下；
+// 单人=绝对角（其余轴保持），全组=增量同施所有人（相对关系不变）。
+const setRot = (axis, value) => {
+    const r = viewer.modelRotation || { x: 0, y: 0, z: 0 };
+    const next = { x: r.x, y: r.y, z: r.z, [axis]: value };
+    viewer.setModelRotation(next.x, next.y, next.z);
+    refreshControls(); schedulePreview();
+};
+for (const [id, axis] of [['turn', 'y'], ['pitch', 'x'], ['roll', 'z']]) {
+    bindSlider($(`#${id}`), value => {
+        if (groupMode()) {
+            const prev = sliderPrev[id] ?? value;
+            sliderPrev[id] = value;
+            const delta = value - prev;
+            eachPerson(() => {
+                const r = viewer.modelRotation;
+                const v = ((r[axis] + delta + 540) % 360) - 180;
+                viewer.setModelRotation(axis === 'y' ? v : r.x, axis === 'y' ? r.y : (axis === 'x' ? v : r.z), axis === 'z' ? v : r.z);
+            });
+            return;
+        }
+        sliderPrev[id] = value;
+        setRot(axis, value);
+    });
+}
 for (const axis of ['x', 'y', 'z']) {
     bindSlider($(`#r${axis}`), value => {
         const bone = viewer.bones?.[selectedBoneName];

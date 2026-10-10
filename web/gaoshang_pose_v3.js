@@ -4,7 +4,7 @@ import { api } from "../../scripts/api.js";
 const EDITORS = {
     studio: { url: new URL("./editor/studio.html", import.meta.url), version: "20261002-v5", title: "机位与姿态编辑器编辑器",
               fields: ["scene_json", "output_mode", "width", "height", "extra_prompt"], data: "scene_json", image: "reference_image_1" },
-    freePose: { url: new URL("./editor/freepose.html", import.meta.url), version: "gaoshang-view-v47", title: "3D多人姿势编辑器",
+    freePose: { url: new URL("./editor/freepose.html", import.meta.url), version: "gaoshang-view-v48", title: "3D多人姿势编辑器",
                 fields: ["pose_json", "extra_prompt", "width", "height"], data: "pose_json", image: "reference_image" },
 };
 const editorFor = node => (node.comfyClass || node.type) === "GaoshangQwenFreePose" ? EDITORS.freePose : EDITORS.studio;

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3D多人姿势编辑器 · 自由姿势</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="freepose.css?v=gaoshang-view-v47"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3D多人姿势编辑器 · 自由姿势</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="freepose.css?v=gaoshang-view-v48"></head>
 <body>
 <header class="appbar"><div class="brand"><span class="brand-icon">⌘</span><b>3D多人姿势编辑器</b><span class="divider"></span><span>自由姿势</span><small>最多9人 · 按颜色选择人物 · 独立摆姿</small></div><div class="header-actions"><span id="save-status">编辑后应用到节点</span><button id="undo" title="撤销 Ctrl+Z">↶ 撤销</button><button id="redo" title="重做 Ctrl+Shift+Z">↷</button><button id="cancel-editor">取消</button><button class="primary" id="apply-editor" disabled>应用到节点</button></div></header>
 <div class="people-toolbar"><button id="add-person">＋ 添加人物</button><div id="person-buttons" role="group" aria-label="选择人物"></div><button id="select-all" title="选中全部人物：滑杆/拖拽/方向键微调整组，相对关系不变">全部</button><button id="remove-person">删除末号人物</button><button id="arrange-people">全部排入画框</button><span id="people-status"></span></div>
@@ -45,8 +45,10 @@
 <div class="panel-tabs"><button class="active" data-tab="output">输出</button><button data-tab="pose">关节</button><button data-tab="body">体型</button><button data-tab="proportion">比例</button></div>
 <div id="output-panel">
 <section id="output-section"><div class="section-heading"><h2>人物在画面中</h2><button class="text-button" id="fit-frame-2">撑满</button></div><div class="segmented" style="margin:4px 0 8px"><button class="text-button" id="group-scale-down">全组缩小</button><button class="text-button" id="group-scale-up">全组放大</button><button class="text-button" id="group-rot-l">全组↺15°</button><button class="text-button" id="group-rot-r">全组↻15°</button></div>
-<label class="slider-label">整体转身<output id="turn-value"></output></label><input id="turn" type="range" min="-180" max="180" step="1">
-<div class="fp-presets"><button data-turn="0">正面</button><button data-turn="45">左前</button><button data-turn="90">左侧</button><button data-turn="180">背面</button><button data-turn="-90">右侧</button><button data-turn="-45">右前</button></div>
+<label class=slider-label>转身（左右）<output id=turn-value></output></label><input id=turn type=range min=-180 max=180 step=1>
+<label class=slider-label>俯仰（前后倾）<output id=pitch-value></output></label><input id=pitch type=range min=-60 max=60 step=1>
+<label class=slider-label>侧倾（左右倒）<output id=roll-value></output></label><input id=roll type=range min=-60 max=60 step=1>
+<small style=opacity:.75>三轴各自脚下为旋转中心；全组模式下增量同施所有人</small>
 <label class="slider-label">大小<output id="zoom-value"></output></label><input id="zoom" type="range" min="0.2" max="6" step="0.01">
 <label class="slider-label">左右<output id="tx-value"></output></label><input id="tx" type="range" min="-20" max="20" step="0.05">
 <label class="slider-label">上下<output id="ty-value"></output></label><input id="ty" type="range" min="-20" max="20" step="0.05"><label class="slider-label">前后<output id="tz-value"></output></label><input id="tz" type="range" min="-20" max="20" step="0.05"></section>
@@ -68,4 +70,4 @@
 <section class="description-section"><div class="section-heading"><h2>提示词</h2><button id="copy-description" class="text-button">复制</button></div><label class="field-label">补充要求（建议英文）<textarea id="extra-prompt" placeholder="例如：keep the outfit, soft studio light"></textarea></label><p id="description"></p><span class="description-note">多人自动按颜色对应人物图；补充要求会追加到提示词。</span></section>
 </aside></main>
 <footer class="app-footer"><span>3D多人姿势编辑器 <span class="footer-dot">/</span> 多人姿势与站位</span><span>人偶图 → image_1，人物1–9 → image_2–image_10</span></footer>
-<script type="module" src="freepose.mjs?v=gaoshang-view-v47"></script></body></html>
+<script type="module" src="freepose.mjs?v=gaoshang-view-v48"></script></body></html>
