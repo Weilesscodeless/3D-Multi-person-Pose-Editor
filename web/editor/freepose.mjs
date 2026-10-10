@@ -1067,7 +1067,6 @@ function refreshControls() {
         const input = $(`#prop-${key}`);
         if (input) { input.value = doc.proportions[key]; setOutput(`prop-${key}`, `${Math.round(doc.proportions[key] * 100)}%`); }
     }
-    $('#description').textContent = promptText();
     refreshBoneSliders();
 }
 
@@ -1306,8 +1305,6 @@ for (const button of document.querySelectorAll('.panel-tabs button')) {
         for (const tab of ['output', 'pose', 'body', 'proportion']) $(`#${tab}-panel`).hidden = tab !== button.dataset.tab;
     };
 }
-$('#extra-prompt').addEventListener('input', event => { extraPrompt = event.target.value; refreshControls(); });
-$('#copy-description').onclick = async () => { try { await navigator.clipboard.writeText(promptText()); toast('已复制'); } catch { toast('复制失败'); } };
 
 document.addEventListener('keydown', event => {
     if (event.target.closest?.('textarea, input[type=number], input[type=search]')) return;
@@ -1447,8 +1444,10 @@ function applyPayload(payload) {
         doc = people[activePerson];
     }
     referencePreviews = payload.referencePreviews || [payload.referencePreview];
+    const sourcePhoto = $('#source-photo');
+    if (sourcePhoto && (payload.referencePreview || referencePreviews[0]))
+        sourcePhoto.src = payload.referencePreview || referencePreviews[0];  // 常驻原图
     extraPrompt = payload.extra_prompt || '';
-    $('#extra-prompt').value = extraPrompt;
     if (payload.referencePreview) {
         $('#person-preview').src = payload.referencePreview;
         $('#person-preview-wrap').hidden = false;
