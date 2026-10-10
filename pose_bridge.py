@@ -916,8 +916,14 @@ class GaoshangMHRToOpenPose:
                         body["gender"] = 0.5
                         body["shoulder_hip"] = round(sh / hp, 2)
                 h = _h3d(p); t = _torso(p)
-                if h_med and h and h > 0.2 and p.get("fully_visible") is not False:
-                    body["height"] = round(0.5 + min(0.25, max(-0.25, (h / h_med - 1) / 0.30 * 0.25)), 2)
+                # 身高直接采用 SAM3D 实测（同平面规尺）：组内中位=编辑器标准身形
+                # 14.33 网格单位，个人按实测比例映射（人偶身高比=SAM3D 身高比）。
+                # 滑杆曲线实测 0→10.66 / 1→18.35（近线性）。SAM3D 绝对米制偏小
+                # （成人 1.2-1.5m），故用组内比例而非绝对值，避免全体触底。
+                if h_med and h and h > 0.2:
+                    mesh_units = 14.33 * (h / h_med)
+                    body["height"] = round(min(1.0, max(0.0, (mesh_units - 10.66) / (18.35 - 10.66))), 2)
+                    body["h3d_m"] = round(float(h), 2)
                 else:
                     body["height"] = 0.5
                 if t_med and t and h and h > 0.2 and p.get("fully_visible") is not False:
