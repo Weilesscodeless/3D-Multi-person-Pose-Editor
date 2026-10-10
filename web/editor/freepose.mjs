@@ -1,11 +1,15 @@
 // Free-pose editor: one VNCCS MakeHuman mannequin. Editing uses a free orbit view;
 // the output is always the VNCCS front capture (yaw 0 / pitch 0, white background,
 // flat white ambient light), which is what the VNCCS_QI2_PoseStudio LoRA was trained on.
-import { PoseViewerCore } from '../vnccs/vnccs_pose_studio_core.mjs';
-import { loadMorphPack, solveMorph, buildStaticModelData } from '../vnccs/vnccs_pose_morph_runtime.mjs';
-import { HAND_PRESETS } from '../vnccs/vnccs_hand_presets.mjs';
-import { readSkeletonImage } from './pose-import.mjs';
-import { liftOpenPose, WORLD_KEYPOINT_NAMES } from './openpose-lift.mjs';
+// 自研/高频改动模块的 import 必须带版本号：?v= 只刷新本文件，子模块会被浏览器
+// 单独缓存（身高锚定功能曾因此"代码全对但用户跑旧 solveMorph 不生效"）。
+// 动态 import 拼版本，顶版本时全部子模块连带刷新。
+const EDITOR_VERSION = 'v53';
+const { PoseViewerCore } = await import('../vnccs/vnccs_pose_studio_core.mjs?v=' + EDITOR_VERSION);
+const { loadMorphPack, solveMorph, buildStaticModelData } = await import('../vnccs/vnccs_pose_morph_runtime.mjs?v=' + EDITOR_VERSION);
+const { HAND_PRESETS } = await import('../vnccs/vnccs_hand_presets.mjs?v=' + EDITOR_VERSION);
+const { readSkeletonImage } = await import('./pose-import.mjs?v=' + EDITOR_VERSION);
+const { liftOpenPose, WORLD_KEYPOINT_NAMES } = await import('./openpose-lift.mjs?v=' + EDITOR_VERSION);
 
 const $ = selector => document.querySelector(selector);
 const embedded = new URLSearchParams(location.search).has('embedded');
@@ -13,7 +17,6 @@ const INSTRUCTION = 'Draw character from image2';
 const FRONT = { yaw: 0, pitch: 0 };
 const CAPTURE_BACKGROUND = [255, 255, 255];
 const CAPTURE_LIGHTS = [{ type: 'ambient', color: '#ffffff', intensity: 1.0 }];
-const EDITOR_VERSION = 'v52';
 const versionChip = $('#editor-version');
 if (versionChip) versionChip.textContent = EDITOR_VERSION;
 const DEFAULT_MESH = { age: 25, gender: 0.5, weight: 0.5, muscle: 0.5, height: 0.5, breast_size: 0, firmness: 0.5, show_genitals: false };
