@@ -604,7 +604,9 @@ function applyBodyPreset(patch) {
     if (patch.gender != null && patch.gender !== doc.mesh.gender && doc.mesh.keepHeight == null)
         doc.mesh = { ...doc.mesh, keepHeight: solveHeight(doc.mesh) };
     doc.mesh = { ...doc.mesh, ...patch };
-    loadModel(savedPose());
+    // 姿势快照必须剥掉 bonePositions（IK 绝对位置）：否则旧骨架位置会盖回
+    // 新体型的骨架上——性别预设换了 mesh 也被旧骨骼顶回原样（原生老 bug）。
+    loadModel(rotationsOnly(viewer.getPose()));
     saveActivePerson();
     schedulePreview();
     $('#import-status').textContent = '人物形象已更新（' + (activePerson + 1) + ' 号人物）：性别 ' + (doc.mesh.gender > 0.7 ? '男' : doc.mesh.gender < 0.3 ? '女' : '中性') + '，体型 ' + (doc.mesh.muscle > 0.7 ? '壮硕' : doc.mesh.muscle < 0.4 ? '偏瘦' : '标准');
