@@ -1117,8 +1117,8 @@ for (const [id, axis] of [['turn', 'y'], ['pitch', 'x'], ['roll', 'z']]) {
             const delta = value - prev;
             eachPerson(() => {
                 const r = viewer.modelRotation;
-                const v = ((r[axis] + delta + 540) % 360) - 180;
-                viewer.setModelRotation(axis === 'y' ? v : r.x, axis === 'y' ? r.y : (axis === 'x' ? v : r.z), axis === 'z' ? v : r.z);
+                const next = { x: r.x, y: r.y, z: r.z, [axis]: ((r[axis] + delta + 540) % 360) - 180 };
+                viewer.setModelRotation(next.x, next.y, next.z);
             });
             return;
         }
