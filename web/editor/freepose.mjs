@@ -13,6 +13,9 @@ const INSTRUCTION = 'Draw character from image2';
 const FRONT = { yaw: 0, pitch: 0 };
 const CAPTURE_BACKGROUND = [255, 255, 255];
 const CAPTURE_LIGHTS = [{ type: 'ambient', color: '#ffffff', intensity: 1.0 }];
+const EDITOR_VERSION = 'v52';
+const versionChip = $('#editor-version');
+if (versionChip) versionChip.textContent = EDITOR_VERSION;
 const DEFAULT_MESH = { age: 25, gender: 0.5, weight: 0.5, muscle: 0.5, height: 0.5, breast_size: 0, firmness: 0.5, show_genitals: false };
 const BODY_SLIDERS = [
     ['gender', '性别（女 ← → 男）', 0, 1, 0.01], ['age', '年龄', 1, 90, 1], ['height', '身高', 0, 1, 0.01],
