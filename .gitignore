@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.bak
+*.bak2
+高尚姿势图库/
+.DS_Store
