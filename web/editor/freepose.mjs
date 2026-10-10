@@ -56,7 +56,7 @@ async function loadBodyPack() {
 let doc = { mesh: { ...DEFAULT_MESH }, proportions: { ...DEFAULT_PROPORTIONS }, pose: null, transform: { ...NEUTRAL_TRANSFORM }, width: 1024, height: 1024, openpose: null };
 const PERSON_COLORS = ['#e53935','#1e88e5','#43a047','#fdd835','#8e24aa','#fb8c00','#00acc1','#ec407a','#795548'];
 const COLOR_NAMES = ['red','blue','green','yellow','purple','orange','cyan','pink','brown'];
-let people = [doc], activePerson = 0, referencePreviews = [];
+let people = [doc], activePerson = 0, referencePreviews = [], sourcePreview = null;
 let extraPrompt = '';
 let pack = null;
 let ready = false;
@@ -1333,10 +1333,9 @@ function renderPeople() {
     $('#add-person').disabled=people.length>=9;
     $('#remove-person').disabled=people.length<=1;
     $('#people-status').textContent=`${people.length}/9 人 · 当前编辑 ${activePerson+1}号 · 图片输入按人物编号对应`;
-    const preview=referencePreviews[activePerson];
-    $('#person-preview-wrap').hidden=!preview;
-    if(preview) $('#person-preview').src=preview;
-    $('#person-preview-title').textContent=`${activePerson+1}号人物图 · image${activePerson+2}`;
+    $('#person-preview-wrap').hidden=!sourcePreview;
+    if(sourcePreview) $('#person-preview').src=sourcePreview;  // 常驻原图
+    $('#person-preview-title').textContent='原图';
 }
 function activatePerson(index) {
     activePerson=index; doc=people[index];
@@ -1444,9 +1443,7 @@ function applyPayload(payload) {
         doc = people[activePerson];
     }
     referencePreviews = payload.referencePreviews || [payload.referencePreview];
-    const sourcePhoto = $('#source-photo');
-    if (sourcePhoto && (payload.referencePreview || referencePreviews[0]))
-        sourcePhoto.src = payload.referencePreview || referencePreviews[0];  // 常驻原图
+    sourcePreview = payload.referencePreview || referencePreviews[0];  // 常驻原图
     extraPrompt = payload.extra_prompt || '';
     if (payload.referencePreview) {
         $('#person-preview').src = payload.referencePreview;
