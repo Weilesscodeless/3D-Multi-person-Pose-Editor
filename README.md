@@ -75,7 +75,7 @@ git clone https://github.com/Weilesscodeless/3D-Multi-person-Pose-Editor.git
 
 ## 致谢与许可
 
-- 基于高尚 Gaoshang-Pose（MIT, © 2026 Work-Fisher）与 VNCCS PoseStudio 深度改造
-- MakeHuman 人偶网格 CC0（见 web/vnccs/assets/ 许可文件）
+- 基于 [GStaaaaa/ComfyUI-Gaoshang-Pose](https://github.com/GStaaaaa/ComfyUI-Gaoshang-Pose)（高尚姿势编辑器，MIT）深度改造
+- VNCCS PoseStudio 前端与 MakeHuman 网格来自 [AHEKOT/ComfyUI_VNCCS_Utils](https://github.com/AHEKOT/ComfyUI_VNCCS_Utils)（MIT，网格 CC0，见 web/vnccs/ 许可文件）
 - three.js（MIT，见 web/editor/vendor/LICENSE）
 - 本项目代码 MIT
