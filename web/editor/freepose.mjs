@@ -144,7 +144,7 @@ function resetPose() {
 }
 
 function loadModel(pose) {
-    const morph = solveMorph(pack, doc.mesh);
+    const morph = solveMorph(pack, doc.mesh, meshKeepHeight);
     viewer.setSkinMode('naked');
     // loadData() applies these cached scales while it builds the new rig.
     viewer.headScale = doc.proportions.head;
@@ -584,7 +584,7 @@ if (resam3dButton) resam3dButton.onclick = async () => {
 };
 // 人物形象预设：改 doc.mesh → 整个 rig 即时重建（姿势保留），肉眼立辨生效。
 const BUILDS = { slim: { weight: 0.25, muscle: 0.3 }, standard: { weight: 0.5, muscle: 0.5 }, strong: { weight: 0.72, muscle: 0.85 } };
-// 性别/年龄 morph 自带身高差——调性别时自动补偿 height 参数，身高保持不变。
+// 切性别只换身材比例、身高不变：锚定当前身高，solveMorph 层等比缩放顶回。
 const solveHeight = params => {
     if (!pack) return null;
     const v = solveMorph(pack, params).vertices;
@@ -592,20 +592,10 @@ const solveHeight = params => {
     for (let i = 1; i < v.length; i += 3) { if (v[i] < minY) minY = v[i]; if (v[i] > maxY) maxY = v[i]; }
     return maxY - minY;
 };
-const keepHeight = (mesh, baseH) => {
-    if (!baseH || baseH <= 0.05) return mesh;
-    let out = { ...mesh };
-    for (let k = 0; k < 4; k++) {
-        const h = solveHeight(out);
-        if (!h || Math.abs(h - baseH) <= baseH * 0.008) break;
-        out = { ...out, height: Math.max(0, Math.min(1, out.height + (baseH - h) / baseH * 0.6)) };
-    }
-    return out;
-};
+let meshKeepHeight = null;  // null=不约束；改性别时锚定，手动调身高/重置时清除
 function applyBodyPreset(patch) {
-    const baseH = patch.gender != null && patch.gender !== doc.mesh.gender ? solveHeight(doc.mesh) : null;
+    if (patch.gender != null && patch.gender !== doc.mesh.gender) meshKeepHeight = solveHeight(doc.mesh);
     doc.mesh = { ...doc.mesh, ...patch };
-    if (baseH) doc.mesh = keepHeight(doc.mesh, baseH);
     loadModel(savedPose());
     saveActivePerson();
     schedulePreview();
@@ -1274,19 +1264,15 @@ const bodyContainer = $('#body-sliders');
 for (const [key, label, min, max, step] of BODY_SLIDERS) {
     bodyContainer.insertAdjacentHTML('beforeend', `<label class="slider-label">${label}<output id="body-${key}-value"></output></label><input id="body-${key}" type="range" min="${min}" max="${max}" step="${step}">`);
     $(`#body-${key}`).addEventListener('input', event => {
-        const baseH = key === 'gender' ? (solveHeight(doc.mesh) ?? null) : null;  // 改性别前身高
+        if (key === 'gender' || key === 'age') meshKeepHeight = solveHeight(doc.mesh);  // 锚定当前身高
+        if (key === 'height') meshKeepHeight = null;  // 手动调身高 = 解除约束
         doc.mesh = { ...doc.mesh, [key]: Number(event.target.value) };
         refreshControls();
         clearTimeout(morphTimer);
-        morphTimer = setTimeout(() => {
-            if (baseH) doc.mesh = keepHeight(doc.mesh, baseH);  // 性别 morph 带身高差 → 补偿 height 保持身高
-            loadModel(rotationsOnly(viewer.getPose()));
-            updateCamera(false);
-            refreshControls();
-        }, 120);
+        morphTimer = setTimeout(() => { loadModel(rotationsOnly(viewer.getPose())); updateCamera(false); }, 120);
     });
 }
-$('#reset-body').onclick = () => { doc.mesh = { ...DEFAULT_MESH }; loadModel(rotationsOnly(viewer.getPose())); updateCamera(false); };
+$('#reset-body').onclick = () => { meshKeepHeight = null; doc.mesh = { ...DEFAULT_MESH }; loadModel(rotationsOnly(viewer.getPose())); updateCamera(false); };
 
 const proportionContainer = $('#proportion-sliders');
 for (const [key, label, min, max] of PROPORTIONS) {

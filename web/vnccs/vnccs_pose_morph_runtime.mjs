@@ -280,7 +280,7 @@ export function buildStaticModelData(data, includeGenitals) {
     };
 }
 
-export function solveMorph(data, params = {}) {
+export function solveMorph(data, params = {}, keepHeight = null) {
     const factors = calculateMorphFactors(params);
     const vertices = new Float32Array(data.baseVertices);
     for (const target of data.targets) {
@@ -294,10 +294,34 @@ export function solveMorph(data, params = {}) {
             vertices[vertexOffset + 2] += target.deltas[deltaOffset + 2] * weight;
         }
     }
+    const bonePositions = solveBonePositions(data, vertices);
+    // keepHeight：性别 morph 自带身高差——切性别只换身材比例、身高不变。
+    // 解算后把整副网格（含骨骼/landmark）绕脚底点 (0,minY,0) 等比缩放到目标身高。
+    if (Number.isFinite(keepHeight) && keepHeight > 0.05) {
+        let minY = Infinity, maxY = -Infinity;
+        for (let i = 1; i < vertices.length; i += 3) {
+            if (vertices[i] < minY) minY = vertices[i];
+            if (vertices[i] > maxY) maxY = vertices[i];
+        }
+        const h = maxY - minY;
+        if (h > 0.05 && Math.abs(keepHeight - h) > 1e-4) {
+            const f = keepHeight / h;
+            for (let i = 0; i < vertices.length; i += 3) {
+                vertices[i] *= f;
+                vertices[i + 1] = minY + (vertices[i + 1] - minY) * f;
+                vertices[i + 2] *= f;
+            }
+            for (let i = 0; i < bonePositions.length; i += 3) {
+                bonePositions[i] *= f;
+                bonePositions[i + 1] = minY + (bonePositions[i + 1] - minY) * f;
+                bonePositions[i + 2] *= f;
+            }
+        }
+    }
     const { landmarks, landmarkIndices } = solveLandmarks(data, vertices);
     return {
         vertices,
-        bonePositions: solveBonePositions(data, vertices),
+        bonePositions,
         landmarks,
         landmarkIndices,
         includeGenitals: modelUsesGenitals(params),
